@@ -217,13 +217,17 @@ export default function SweatyCaptcha() {
           const data = await res.json();
 
           if (!res.ok || data.error) {
+            setScore(0);
+            setSweat(0);
+            setDoubleChin(0);
+            setRegret(0);
             setRoast(data.error || "Our AI had a meltdown. Try again.");
             setPhase("rejected");
             return;
           }
 
-          setScore(data.score);
-          setRoast(data.roast);
+          setScore(data.score ?? 0);
+          setRoast(data.roast || "The AI went silent. How meta.");
           setSweat(data.sweat ?? 1);
           setDoubleChin(data.doubleChin ?? 1);
           setRegret(data.regret ?? 1);
@@ -234,8 +238,16 @@ export default function SweatyCaptcha() {
           } else {
             setPhase("rejected");
           }
-        } catch {
-          setRoast("Network error. The shame will have to wait.");
+        } catch (err) {
+          setScore(0);
+          setSweat(0);
+          setDoubleChin(0);
+          setRegret(0);
+          setRoast(
+            err instanceof Error
+              ? `Connection failed: ${err.message}`
+              : "Network error. The shame will have to wait."
+          );
           setPhase("rejected");
         }
       };

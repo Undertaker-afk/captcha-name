@@ -14,7 +14,7 @@ export async function POST(req: NextRequest) {
     }
 
     const apiKey = process.env.KILO_API_KEY;
-    const baseUrl = process.env.KILO_API_URL || "https://api.kilo.ai/gateway";
+    const baseUrl = process.env.KILO_API_URL || "https://api.kilo.ai/api/gateway";
 
     if (!apiKey) {
       return NextResponse.json(
@@ -23,7 +23,10 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const response = await fetch(`${baseUrl}/v1/chat/completions`, {
+    const apiUrl = `${baseUrl}/v1/chat/completions`;
+    console.log("Cringe score: calling", apiUrl, "model: xiaomi/mimo-v2-pro:free");
+
+    const response = await fetch(apiUrl, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -76,19 +79,21 @@ Reject anything that looks confident, filtered, posed, or like a stock photo. Th
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error("Mimo API error:", response.status, errorText);
+      console.error("Kilo API error:", response.status, errorText);
       return NextResponse.json(
-        { error: "AI scoring failed", details: errorText },
+        { error: `AI scoring failed (${response.status}): ${errorText}` },
         { status: 502 }
       );
     }
 
     const data = await response.json();
+    console.log("Kilo API raw response:", JSON.stringify(data).slice(0, 500));
     const content = data.choices?.[0]?.message?.content;
 
     if (!content) {
+      console.error("Kilo API: empty content in response. Full response:", JSON.stringify(data));
       return NextResponse.json(
-        { error: "No response from AI" },
+        { error: "No response from AI. The model may not support image analysis." },
         { status: 502 }
       );
     }

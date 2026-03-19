@@ -92,20 +92,25 @@ export async function POST(req: NextRequest) {
         regret: parsed.regret ?? 1,
       };
 
+      let ratingId: number | undefined;
       try {
-        await db.insert(cringeRatings).values({
-          overallScore: result.score,
-          sweatRating: result.sweat,
-          doubleChinRating: result.doubleChin,
-          regretRating: result.regret,
-          verdict: result.verdict,
-          roast: result.roast,
-        });
+        const [inserted] = await db
+          .insert(cringeRatings)
+          .values({
+            overallScore: result.score,
+            sweatRating: result.sweat,
+            doubleChinRating: result.doubleChin,
+            regretRating: result.regret,
+            verdict: result.verdict,
+            roast: result.roast,
+          })
+          .returning({ id: cringeRatings.id });
+        ratingId = inserted?.id;
       } catch (dbError) {
         console.error("DB insert failed (non-blocking):", dbError);
       }
 
-      return NextResponse.json(result);
+      return NextResponse.json({ ...result, ratingId });
     } catch {
       return NextResponse.json(
         { error: "Invalid AI response format", raw: content },

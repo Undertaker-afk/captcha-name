@@ -104,6 +104,7 @@ export default function SweatyCaptcha() {
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const shameUploadedRef = useRef(false);
+  const ratingIdRef = useRef<number | undefined>(undefined);
 
   const [timeLeft, setTimeLeft] = useState(PUZZLE_TIME_LIMIT);
 
@@ -128,6 +129,7 @@ export default function SweatyCaptcha() {
           reason,
           time,
           attempts: moveCount,
+          ratingId: ratingIdRef.current,
         }),
       }).catch(() => {});
     },
@@ -206,6 +208,7 @@ export default function SweatyCaptcha() {
         const dataUrl = e.target?.result as string;
         setImageDataUrl(dataUrl);
         shameUploadedRef.current = false;
+        ratingIdRef.current = undefined;
         setPhase("scoring");
 
         try {
@@ -215,7 +218,7 @@ export default function SweatyCaptcha() {
             body: JSON.stringify({ image: dataUrl }),
           });
 
-          let data: { error?: string; score?: number; roast?: string; sweat?: number; doubleChin?: number; regret?: number };
+          let data: { error?: string; score?: number; roast?: string; sweat?: number; doubleChin?: number; regret?: number; ratingId?: number };
           try {
             data = await res.json();
           } catch {
@@ -237,6 +240,7 @@ export default function SweatyCaptcha() {
           setSweat(data.sweat ?? 1);
           setDoubleChin(data.doubleChin ?? 1);
           setRegret(data.regret ?? 1);
+          ratingIdRef.current = data.ratingId;
 
           if ((data.score ?? 0) >= 85) {
             toast.success("Cringe detected. Brace yourself.");
@@ -441,6 +445,7 @@ export default function SweatyCaptcha() {
     setElapsedTime(0);
     setTimeLeft(PUZZLE_TIME_LIMIT);
     shameUploadedRef.current = false;
+    ratingIdRef.current = undefined;
     setFailureReason("");
     setSweat(0);
     setDoubleChin(0);

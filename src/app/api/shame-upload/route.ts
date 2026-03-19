@@ -1,9 +1,12 @@
 import { put } from "@vercel/blob";
 import { NextRequest, NextResponse } from "next/server";
+import { db } from "@/db";
+import { cringeRatings } from "@/db/schema";
+import { eq } from "drizzle-orm";
 
 export async function POST(req: NextRequest) {
   try {
-    const { image, reason, time, attempts } = await req.json();
+    const { image, reason, time, attempts, ratingId } = await req.json();
 
     if (!image) {
       return NextResponse.json(
@@ -48,6 +51,17 @@ export async function POST(req: NextRequest) {
       token,
       contentType: "application/json",
     });
+
+    if (ratingId) {
+      try {
+        await db
+          .update(cringeRatings)
+          .set({ imageUrl: url })
+          .where(eq(cringeRatings.id, ratingId));
+      } catch (dbError) {
+        console.error("Failed to link image to rating (non-blocking):", dbError);
+      }
+    }
 
     return NextResponse.json({ url, metadata });
   } catch (error) {

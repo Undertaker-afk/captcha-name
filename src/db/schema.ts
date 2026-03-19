@@ -8,6 +8,7 @@ export const cringeRatings = sqliteTable("cringe_ratings", {
   regretRating: integer("regret_rating").notNull(),
   verdict: text("verdict").notNull(),
   roast: text("roast").notNull(),
+  imageUrl: text("image_url"),
   createdAt: integer("created_at", { mode: "timestamp" }).$defaultFn(
     () => new Date()
   ),

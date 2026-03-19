@@ -1,0 +1,1 @@
+ALTER TABLE `cringe_ratings` ADD `image_url` text;

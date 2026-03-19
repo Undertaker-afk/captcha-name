@@ -9,6 +9,7 @@
 | TypeScript   | 5.9.x   | Type-safe JavaScript            |
 | Tailwind CSS | 4.x     | Utility-first CSS               |
 | Bun          | Latest  | Package manager & runtime       |
+| Drizzle ORM  | 0.45.x  | SQLite ORM (via Turso/libsql)   |
 
 ## Development Environment
 
@@ -26,6 +27,8 @@ bun build          # Production build
 bun start          # Start production server
 bun lint           # Run ESLint
 bun typecheck      # Run TypeScript type checking
+bun db:generate    # Generate Drizzle migrations
+bun db:migrate     # Run migrations
 ```
 
 ## Project Configuration

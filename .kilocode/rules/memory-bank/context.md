@@ -21,6 +21,9 @@ The Sweaty Selfie Reassembly CAPTCHA is a single-step, maximally humiliating CAP
 - [x] "Hall of Shame" navigation link on main page
 - [x] Success screen with elapsed time, move count, bot probability
 - [x] Rejection screen with AI roast and cringe score
+- [x] Cringe categories: sweat, double chin, regret (1-10 AI ratings)
+- [x] Turso/libsql database for cringe ratings persistence (`src/db/`)
+- [x] Cringe categories leaderboard page (`src/app/categories/page.tsx`)
 - [x] Layout metadata and env vars configured
 
 ## UI Library
@@ -40,11 +43,15 @@ The Sweaty Selfie Reassembly CAPTCHA is a single-step, maximally humiliating CAP
 | `src/app/api/shame-upload/route.ts` | Server route — uploads failed image to Vercel Blob with metadata |
 | `src/app/page.tsx` | Home page — renders SweatyCaptcha |
 | `src/app/gallery/page.tsx` | Hall of Shame — lists all blurred failed images from Vercel Blob |
+| `src/app/categories/page.tsx` | Cringe Categories leaderboard — top sweat/double-chin/regret ratings |
 | `src/app/globals.css` | Custom CSS animations + E2B theme import |
 | `src/app/layout.tsx` | Root layout — IBM Plex fonts, dark class, Toaster |
 | `src/theme.css` | E2B design tokens |
 | `src/components/ui/` | E2B components: button, badge, dialog, icons, loader, sonner |
-| `.env.local` | `KILO_API_URL`, `KILO_API_KEY`, `BLOB_READ_WRITE_TOKEN` |
+| `src/db/schema.ts` | Drizzle schema — `cringe_ratings` table |
+| `src/db/index.ts` | DB client via `@kilocode/app-builder-db` (Turso/libsql) |
+| `src/db/migrate.ts` | Migration runner |
+| `.env.local` | `KILO_API_URL`, `KILO_API_KEY`, `BLOB_READ_WRITE_TOKEN`, `DB_URL`, `DB_TOKEN` |
 
 ## Sabotage Mechanics
 
@@ -62,7 +69,9 @@ The Sweaty Selfie Reassembly CAPTCHA is a single-step, maximally humiliating CAP
 - API key stored in `KILO_API_KEY` env var
 - Vision analysis with custom cringe-rating prompt
 - Returns score (0-100), verdict (ACCEPT/REJECT), roast text
+- Returns cringe categories (1-10 each): sweat, double_chin, regret
 - Threshold: 85+ to pass to puzzle phase
+- All ratings stored in `cringe_ratings` DB table for leaderboard
 
 ## Shame Persistence
 
@@ -83,3 +92,4 @@ All features implemented. App is live.
 | 2026-03-19 | Built complete CAPTCHA with AI scoring and sabotage puzzle |
 | 2026-03-19 | Added 30s timer, shame upload to Vercel Blob, Hall of Shame gallery |
 | 2026-03-19 | Integrated E2B shadcn UI library (ui.e2b.dev) — Button, Badge, Dialog, Sonner |
+| 2026-03-19 | Added Turso/libsql database, cringe categories (sweat/double-chin/regret), categories leaderboard page |

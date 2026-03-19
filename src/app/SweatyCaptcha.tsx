@@ -62,6 +62,26 @@ function getTileBackgroundStyle(
   };
 }
 
+function CategoryBar({ label, emoji, value }: { label: string; emoji: string; value: number }) {
+  return (
+    <div className="flex items-center gap-3">
+      <span className="text-lg w-6 text-center">{emoji}</span>
+      <div className="flex-1">
+        <div className="flex justify-between mb-1">
+          <span className="text-label text-fg-secondary">{label}</span>
+          <span className="text-label-numeric text-accent-main-highlight">{value}/10</span>
+        </div>
+        <div className="w-full h-1.5 bg-fill rounded-full overflow-hidden">
+          <div
+            className="h-full bg-accent-main-highlight rounded-full transition-all duration-500"
+            style={{ width: `${(value / 10) * 100}%` }}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function SweatyCaptcha() {
   const [phase, setPhase] = useState<Phase>("upload");
   const [imageDataUrl, setImageDataUrl] = useState<string | null>(null);
@@ -77,6 +97,9 @@ export default function SweatyCaptcha() {
   const [elapsedTime, setElapsedTime] = useState(0);
   const [attempts, setAttempts] = useState(0);
   const [failureReason, setFailureReason] = useState("");
+  const [sweat, setSweat] = useState(0);
+  const [doubleChin, setDoubleChin] = useState(0);
+  const [regret, setRegret] = useState(0);
 
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -201,6 +224,9 @@ export default function SweatyCaptcha() {
 
           setScore(data.score);
           setRoast(data.roast);
+          setSweat(data.sweat ?? 1);
+          setDoubleChin(data.doubleChin ?? 1);
+          setRegret(data.regret ?? 1);
 
           if (data.score >= 85) {
             toast.success("Cringe detected. Brace yourself.");
@@ -398,6 +424,9 @@ export default function SweatyCaptcha() {
     setTimeLeft(PUZZLE_TIME_LIMIT);
     shameUploadedRef.current = false;
     setFailureReason("");
+    setSweat(0);
+    setDoubleChin(0);
+    setRegret(0);
   }, [cleanup]);
 
   const timerUrgent = timeLeft <= 10;
@@ -411,6 +440,15 @@ export default function SweatyCaptcha() {
       >
         <Button variant="secondary" size="default">
           Hall of Shame
+        </Button>
+      </a>
+
+      <a
+        href="/categories"
+        className="absolute top-4 left-4"
+      >
+        <Button variant="secondary" size="default">
+          Cringe Categories
         </Button>
       </a>
 
@@ -487,6 +525,14 @@ export default function SweatyCaptcha() {
                   Cringe score
                 </span>
                 <Badge variant="error">{score}/100</Badge>
+              </div>
+              <div className="border-t border-stroke pt-3 space-y-2.5">
+                <p className="text-label text-fg-tertiary uppercase tracking-wide">
+                  Cringe Categories
+                </p>
+                <CategoryBar label="Most Sweaty" emoji="💧" value={sweat} />
+                <CategoryBar label="Best Double Chin" emoji="😤" value={doubleChin} />
+                <CategoryBar label="Peak Regret" emoji="😰" value={regret} />
               </div>
               <p className="text-body text-fg-tertiary">
                 Need 85+ to pass. Try something that makes you sweat.
@@ -639,6 +685,14 @@ export default function SweatyCaptcha() {
                 </span>{" "}
                 sweaty moves.
               </p>
+              <div className="border-t border-stroke pt-3 space-y-2.5">
+                <p className="text-label text-fg-tertiary uppercase tracking-wide">
+                  Your Cringe Profile
+                </p>
+                <CategoryBar label="Most Sweaty" emoji="💧" value={sweat} />
+                <CategoryBar label="Best Double Chin" emoji="😤" value={doubleChin} />
+                <CategoryBar label="Peak Regret" emoji="😰" value={regret} />
+              </div>
               <div className="border-t border-stroke pt-3 space-y-2">
                 <Badge variant="positive">CAPTCHA passed</Badge>
                 <p className="text-label text-fg-tertiary">

@@ -13,8 +13,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Next.js Template",
-  description: "A minimal Next.js starter template",
+  title: "Sweaty Selfie Reassembly — CAPTCHA",
+  description:
+    "The world's most humiliating CAPTCHA. Upload your worst selfie. Reassemble your shame.",
 };
 
 export default function RootLayout({

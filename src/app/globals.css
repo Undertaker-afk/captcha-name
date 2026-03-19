@@ -1,1 +1,162 @@
 @import "tailwindcss";
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scan {
+  0% {
+    width: 0%;
+  }
+  50% {
+    width: 70%;
+  }
+  90% {
+    width: 95%;
+  }
+  100% {
+    width: 100%;
+  }
+}
+
+@keyframes wobble {
+  0%,
+  100% {
+    transform: rotate(0deg);
+  }
+  15% {
+    transform: rotate(-1.5deg);
+  }
+  30% {
+    transform: rotate(1.2deg);
+  }
+  45% {
+    transform: rotate(-0.8deg);
+  }
+  60% {
+    transform: rotate(0.5deg);
+  }
+  75% {
+    transform: rotate(-0.3deg);
+  }
+}
+
+@keyframes slip {
+  0% {
+    transform: translate(0, 0) rotate(0deg);
+  }
+  30% {
+    transform: translate(-8px, 6px) rotate(-5deg);
+  }
+  60% {
+    transform: translate(6px, -4px) rotate(3deg);
+  }
+  100% {
+    transform: translate(0, 0) rotate(0deg);
+  }
+}
+
+@keyframes sweat-glisten {
+  0%,
+  100% {
+    filter: brightness(1);
+  }
+  50% {
+    filter: brightness(1.3) saturate(0.8);
+  }
+}
+
+@keyframes drip {
+  0% {
+    opacity: 1;
+    transform: translateY(-4px) scale(1);
+  }
+  50% {
+    opacity: 0.8;
+    transform: translateY(4px) scale(1.1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(12px) scale(0.8);
+  }
+}
+
+@keyframes grip-fail {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  20% {
+    transform: translateX(3px);
+  }
+  40% {
+    transform: translateX(-2px);
+  }
+  60% {
+    transform: translateX(4px);
+  }
+  80% {
+    transform: translateX(-1px);
+  }
+}
+
+@keyframes bounce-once {
+  0% {
+    transform: scale(0.3);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.1);
+  }
+  70% {
+    transform: scale(0.95);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.5s ease-out forwards;
+}
+
+.animate-scan {
+  animation: scan 2s ease-in-out forwards;
+}
+
+.animate-wobble {
+  animation: wobble 0.6s ease-in-out;
+}
+
+.animate-slip {
+  animation: slip 0.2s ease-out;
+}
+
+.animate-sweat-glisten {
+  animation: sweat-glisten 0.8s ease-in-out infinite;
+}
+
+.animate-drip {
+  animation: drip 1s ease-in forwards;
+}
+
+.animate-grip-fail {
+  animation: grip-fail 0.15s ease-in-out infinite;
+}
+
+.animate-bounce-once {
+  animation: bounce-once 0.6s ease-out forwards;
+}
+
+::selection {
+  background-color: rgba(168, 85, 247, 0.4);
+  color: white;
+}

@@ -3,6 +3,8 @@ import OpenAI from "openai";
 import { db } from "@/db";
 import { cringeRatings } from "@/db/schema";
 
+const MAX_IMAGE_SIZE_BYTES = 5 * 1024 * 1024; // 5MB limit for base64 image data
+
 const CRINGE_PROMPT = `You are a CRINGE INDEX RATING AI for a CAPTCHA system. Your job is to rate how embarrassing, cringeworthy, or humiliating a photo is.
 
 Rate the image on a scale of 0-100 based on these criteria:
@@ -27,24 +29,55 @@ Respond with ONLY a JSON object: {"score": <number 0-100>, "verdict": "ACCEPT"|"
 
 Reject anything that looks confident, filtered, posed, or like a stock photo. The photo must contain REAL HUMAN EMBARRASSMENT.`;
 
+function jsonResponse(data: Record<string, unknown>, status: number) {
+  return NextResponse.json(data, {
+    status,
+    headers: { "Content-Type": "application/json" },
+  });
+}
+
 export async function POST(req: NextRequest) {
   try {
-    const { image } = await req.json();
+    const apiKey = process.env.KILO_API_KEY;
+    const baseUrl =
+      process.env.KILO_API_URL || "https://api.kilo.ai/api/gateway";
 
-    if (!image) {
-      return NextResponse.json(
-        { error: "No image provided" },
-        { status: 400 }
+    if (!apiKey) {
+      return jsonResponse(
+        {
+          error:
+            "KILO_API_KEY is not configured. Set it in your .env.local file.",
+        },
+        500
       );
     }
 
-    const apiKey = process.env.KILO_API_KEY;
-    const baseUrl = process.env.KILO_API_URL || "https://api.kilo.ai/api/gateway";
+    let body: { image?: string };
+    try {
+      body = await req.json();
+    } catch {
+      return jsonResponse({ error: "Invalid JSON in request body" }, 400);
+    }
 
-    if (!apiKey) {
-      return NextResponse.json(
-        { error: "API key not configured" },
-        { status: 500 }
+    const { image } = body;
+
+    if (!image) {
+      return jsonResponse({ error: "No image provided" }, 400);
+    }
+
+    if (typeof image !== "string" || !image.startsWith("data:image/")) {
+      return jsonResponse(
+        { error: "Image must be a base64 data URL (data:image/...)" },
+        400
+      );
+    }
+
+    if (image.length > MAX_IMAGE_SIZE_BYTES) {
+      return jsonResponse(
+        {
+          error: `Image too large (${(image.length / 1024 / 1024).toFixed(1)}MB). Max allowed: 5MB.`,
+        },
+        400
       );
     }
 
@@ -67,18 +100,21 @@ export async function POST(req: NextRequest) {
     const content = completion.choices[0]?.message?.content;
 
     if (!content) {
-      return NextResponse.json(
-        { error: "No response from AI. The model may not support image analysis." },
-        { status: 502 }
+      return jsonResponse(
+        {
+          error:
+            "No response from AI. The model may not support image analysis.",
+        },
+        502
       );
     }
 
     try {
       const jsonMatch = content.match(/\{[\s\S]*\}/);
       if (!jsonMatch) {
-        return NextResponse.json(
+        return jsonResponse(
           { error: "Could not parse AI response", raw: content },
-          { status: 502 }
+          502
         );
       }
       const parsed = JSON.parse(jsonMatch[0]);
@@ -110,11 +146,11 @@ export async function POST(req: NextRequest) {
         console.error("DB insert failed (non-blocking):", dbError);
       }
 
-      return NextResponse.json({ ...result, ratingId });
+      return jsonResponse({ ...result, ratingId }, 200);
     } catch {
-      return NextResponse.json(
+      return jsonResponse(
         { error: "Invalid AI response format", raw: content },
-        { status: 502 }
+        502
       );
     }
   } catch (error) {
@@ -124,6 +160,6 @@ export async function POST(req: NextRequest) {
         ? `AI scoring failed (${error.status}): ${error.message}`
         : "Internal server error";
     const status = error instanceof OpenAI.APIError ? 502 : 500;
-    return NextResponse.json({ error: message }, { status });
+    return jsonResponse({ error: message }, status);
   }
 }

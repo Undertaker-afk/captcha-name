@@ -65,7 +65,7 @@ The Sweaty Selfie Reassembly CAPTCHA is a single-step, maximally humiliating CAP
 
 ## AI Integration
 
-- Model: `xiaomi/mimo-v2-pro:free` via Kilo API (`https://api.kilo.ai/gateway/v1/chat/completions`)
+- Model: `xiaomi/mimo-v2-pro:free` via Kilo API (`https://api.kilo.ai/api/gateway/v1/chat/completions`)
 - API key stored in `KILO_API_KEY` env var
 - Vision analysis with custom cringe-rating prompt
 - Returns score (0-100), verdict (ACCEPT/REJECT), roast text
@@ -93,3 +93,4 @@ All features implemented. App is live.
 | 2026-03-19 | Added 30s timer, shame upload to Vercel Blob, Hall of Shame gallery |
 | 2026-03-19 | Integrated E2B shadcn UI library (ui.e2b.dev) — Button, Badge, Dialog, Sonner |
 | 2026-03-19 | Added Turso/libsql database, cringe categories (sweat/double-chin/regret), categories leaderboard page |
+| 2026-03-19 | **Fixed cringe scoring bug**: Kilo API gateway base URL was wrong (`/gateway` → `/api/gateway`). Added detailed error logging in API route and improved frontend error messages. |

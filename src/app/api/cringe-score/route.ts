@@ -1,6 +1,31 @@
 import { NextRequest, NextResponse } from "next/server";
+import OpenAI from "openai";
 import { db } from "@/db";
 import { cringeRatings } from "@/db/schema";
+
+const CRINGE_PROMPT = `You are a CRINGE INDEX RATING AI for a CAPTCHA system. Your job is to rate how embarrassing, cringeworthy, or humiliating a photo is.
+
+Rate the image on a scale of 0-100 based on these criteria:
+- Visible regret, distress, or emotional discomfort
+- Bad lighting, unflattering angle, or poor photo quality
+- Awkward expression (double chin, mid-sneeze, crying face, etc.)
+- Signs of intoxication, dishevelment, or general life failure
+- The kind of photo someone would be MORTIFIED to show publicly
+
+SCORING GUIDE:
+- 0-30: Polished, filtered, confident, or generic. REJECT.
+- 31-60: Somewhat unflattering but not truly embarrassing. REJECT.
+- 61-84: Noticeably embarrassing but not peak cringe. REJECT.
+- 85-100: Genuinely mortifying. The person would die if this went public. ACCEPT.
+
+Also rate these CRINGE CATEGORIES from 1 to 10:
+- sweat: How sweaty, gross, or glistening does the person look? (1 = pristine, 10 = drenched)
+- double_chin: How prominent is the double chin or unflattering jaw/neck situation? (1 = chiseled, 10 = full turkey neck)
+- regret: How much visible regret, despair, or "why did I take this" energy does the photo radiate? (1 = confident king/queen, 10 = pure existential dread)
+
+Respond with ONLY a JSON object: {"score": <number 0-100>, "verdict": "ACCEPT"|"REJECT", "roast": "<one sentence roasting the photo>", "sweat": <number 1-10>, "double_chin": <number 1-10>, "regret": <number 1-10>}
+
+Reject anything that looks confident, filtered, posed, or like a stock photo. The photo must contain REAL HUMAN EMBARRASSMENT.`;
 
 export async function POST(req: NextRequest) {
   try {
@@ -23,75 +48,25 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const apiUrl = `${baseUrl}/v1/chat/completions`;
-    console.log("Cringe score: calling", apiUrl, "model: xiaomi/mimo-v2-pro:free");
+    const client = new OpenAI({ apiKey, baseURL: baseUrl });
 
-    const response = await fetch(apiUrl, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model: "xiaomi/mimo-v2-pro:free",
-        messages: [
-          {
-            role: "user",
-            content: [
-              {
-                type: "text",
-                text: `You are a CRINGE INDEX RATING AI for a CAPTCHA system. Your job is to rate how embarrassing, cringeworthy, or humiliating a photo is.
-
-Rate the image on a scale of 0-100 based on these criteria:
-- Visible regret, distress, or emotional discomfort
-- Bad lighting, unflattering angle, or poor photo quality
-- Awkward expression (double chin, mid-sneeze, crying face, etc.)
-- Signs of intoxication, dishevelment, or general life failure
-- The kind of photo someone would be MORTIFIED to show publicly
-
-SCORING GUIDE:
-- 0-30: Polished, filtered, confident, or generic. REJECT.
-- 31-60: Somewhat unflattering but not truly embarrassing. REJECT.
-- 61-84: Noticeably embarrassing but not peak cringe. REJECT.
-- 85-100: Genuinely mortifying. The person would die if this went public. ACCEPT.
-
-Also rate these CRINGE CATEGORIES from 1 to 10:
-- sweat: How sweaty, gross, or glistening does the person look? (1 = pristine, 10 = drenched)
-- double_chin: How prominent is the double chin or unflattering jaw/neck situation? (1 = chiseled, 10 = full turkey neck)
-- regret: How much visible regret, despair, or "why did I take this" energy does the photo radiate? (1 = confident king/queen, 10 = pure existential dread)
-
-Respond with ONLY a JSON object: {"score": <number 0-100>, "verdict": "ACCEPT"|"REJECT", "roast": "<one sentence roasting the photo>", "sweat": <number 1-10>, "double_chin": <number 1-10>, "regret": <number 1-10>}
-
-Reject anything that looks confident, filtered, posed, or like a stock photo. The photo must contain REAL HUMAN EMBARRASSMENT.`,
-              },
-              {
-                type: "image_url",
-                image_url: {
-                  url: image,
-                },
-              },
-            ],
-          },
-        ],
-        max_tokens: 250,
-      }),
+    const completion = await client.chat.completions.create({
+      model: "xiaomi/mimo-v2-pro:free",
+      messages: [
+        {
+          role: "user",
+          content: [
+            { type: "text", text: CRINGE_PROMPT },
+            { type: "image_url", image_url: { url: image } },
+          ],
+        },
+      ],
+      max_tokens: 250,
     });
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error("Kilo API error:", response.status, errorText);
-      return NextResponse.json(
-        { error: `AI scoring failed (${response.status}): ${errorText}` },
-        { status: 502 }
-      );
-    }
-
-    const data = await response.json();
-    console.log("Kilo API raw response:", JSON.stringify(data).slice(0, 500));
-    const content = data.choices?.[0]?.message?.content;
+    const content = completion.choices[0]?.message?.content;
 
     if (!content) {
-      console.error("Kilo API: empty content in response. Full response:", JSON.stringify(data));
       return NextResponse.json(
         { error: "No response from AI. The model may not support image analysis." },
         { status: 502 }
@@ -117,20 +92,25 @@ Reject anything that looks confident, filtered, posed, or like a stock photo. Th
         regret: parsed.regret ?? 1,
       };
 
+      let ratingId: number | undefined;
       try {
-        await db.insert(cringeRatings).values({
-          overallScore: result.score,
-          sweatRating: result.sweat,
-          doubleChinRating: result.doubleChin,
-          regretRating: result.regret,
-          verdict: result.verdict,
-          roast: result.roast,
-        });
+        const [inserted] = await db
+          .insert(cringeRatings)
+          .values({
+            overallScore: result.score,
+            sweatRating: result.sweat,
+            doubleChinRating: result.doubleChin,
+            regretRating: result.regret,
+            verdict: result.verdict,
+            roast: result.roast,
+          })
+          .returning({ id: cringeRatings.id });
+        ratingId = inserted?.id;
       } catch (dbError) {
         console.error("DB insert failed (non-blocking):", dbError);
       }
 
-      return NextResponse.json(result);
+      return NextResponse.json({ ...result, ratingId });
     } catch {
       return NextResponse.json(
         { error: "Invalid AI response format", raw: content },
@@ -139,9 +119,11 @@ Reject anything that looks confident, filtered, posed, or like a stock photo. Th
     }
   } catch (error) {
     console.error("Cringe score error:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
+    const message =
+      error instanceof OpenAI.APIError
+        ? `AI scoring failed (${error.status}): ${error.message}`
+        : "Internal server error";
+    const status = error instanceof OpenAI.APIError ? 502 : 500;
+    return NextResponse.json({ error: message }, { status });
   }
 }

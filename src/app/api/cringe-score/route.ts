@@ -11,8 +11,8 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const apiKey = process.env.KILOCODE_TOKEN;
-    const baseUrl = process.env.KILO_API_URL || "https://api.kilo.ai";
+    const apiKey = process.env.KILO_API_KEY;
+    const baseUrl = process.env.KILO_API_URL || "https://api.kilo.ai/gateway";
 
     if (!apiKey) {
       return NextResponse.json(
@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
         Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: "kilo/xiaomi/mimo-v2-pro:free",
+        model: "xiaomi/mimo-v2-pro:free",
         messages: [
           {
             role: "user",

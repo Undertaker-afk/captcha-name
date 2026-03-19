@@ -2,17 +2,23 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
-type Phase = "upload" | "scoring" | "rejected" | "puzzle" | "success";
+type Phase =
+  | "upload"
+  | "scoring"
+  | "rejected"
+  | "puzzle"
+  | "success"
+  | "failed";
 type Tile = { id: number; correctIndex: number; currentIndex: number };
 
 const GRID_SIZE = 5;
 const TOTAL_TILES = GRID_SIZE * GRID_SIZE;
 const SLIP_BASE_CHANCE = 0.4;
 const SLIP_FAST_CHANCE = 0.7;
-const FAST_VELOCITY = 800;
 const SWEAT_INTERVAL = 2000;
 const WOBBLE_INTERVAL = 10000;
 const GRIP_FAIL_DURATION = 800;
+const PUZZLE_TIME_LIMIT = 30;
 
 function shuffleArray<T>(arr: T[]): T[] {
   const a = [...arr];
@@ -67,21 +73,81 @@ export default function SweatyCaptcha() {
   const [slippingTileId, setSlippingTileId] = useState<number | null>(null);
   const [elapsedTime, setElapsedTime] = useState(0);
   const [attempts, setAttempts] = useState(0);
+  const [failureReason, setFailureReason] = useState("");
 
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const shameUploadedRef = useRef(false);
 
-  const startTimer = useCallback(() => {
+  const [timeLeft, setTimeLeft] = useState(PUZZLE_TIME_LIMIT);
+
+  const cleanup = useCallback(() => {
+    if (timerRef.current) clearInterval(timerRef.current);
+    if (countdownRef.current) clearInterval(countdownRef.current);
+  }, []);
+
+  useEffect(() => {
+    return cleanup;
+  }, [cleanup]);
+
+  const fireShameUpload = useCallback(
+    (reason: string, time: number, moveCount: number, image: string) => {
+      if (shameUploadedRef.current) return;
+      shameUploadedRef.current = true;
+      fetch("/api/shame-upload", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          image,
+          reason,
+          time,
+          attempts: moveCount,
+        }),
+      }).catch(() => {});
+    },
+    []
+  );
+
+  const handleFailure = useCallback(
+    (reason: string) => {
+      cleanup();
+      setFailureReason(reason);
+      setPhase("failed");
+      if (imageDataUrl) {
+        fireShameUpload(reason, elapsedTime, attempts, imageDataUrl);
+      }
+    },
+    [cleanup, elapsedTime, attempts, imageDataUrl, fireShameUpload]
+  );
+
+  const startPuzzle = useCallback(() => {
     setElapsedTime(0);
+    setTimeLeft(PUZZLE_TIME_LIMIT);
+    shameUploadedRef.current = false;
+
     timerRef.current = setInterval(() => {
       setElapsedTime((t) => t + 1);
+    }, 1000);
+
+    countdownRef.current = setInterval(() => {
+      setTimeLeft((prev) => {
+        if (prev <= 1) {
+          if (countdownRef.current) clearInterval(countdownRef.current);
+          if (timerRef.current) clearInterval(timerRef.current);
+          setFailureReason("timeout");
+          setPhase("failed");
+          return 0;
+        }
+        return prev - 1;
+      });
     }, 1000);
   }, []);
 
   useEffect(() => {
-    return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
-    };
-  }, []);
+    if (phase === "failed" && !shameUploadedRef.current && imageDataUrl) {
+      fireShameUpload(failureReason, elapsedTime, attempts, imageDataUrl);
+    }
+  }, [phase, failureReason, elapsedTime, attempts, imageDataUrl, fireShameUpload]);
 
   const sliceImage = useCallback(
     (imgSrc: string) => {
@@ -100,11 +166,11 @@ export default function SweatyCaptcha() {
         setSlicedImageUrl(canvas.toDataURL());
         setTiles(generateTiles());
         setPhase("puzzle");
-        startTimer();
+        startPuzzle();
       };
       img.src = imgSrc;
     },
-    [startTimer]
+    [startPuzzle]
   );
 
   const handleUpload = useCallback(
@@ -113,6 +179,7 @@ export default function SweatyCaptcha() {
       reader.onload = async (e) => {
         const dataUrl = e.target?.result as string;
         setImageDataUrl(dataUrl);
+        shameUploadedRef.current = false;
         setPhase("scoring");
 
         try {
@@ -166,7 +233,6 @@ export default function SweatyCaptcha() {
     [handleUpload]
   );
 
-  // Sweat drops effect
   useEffect(() => {
     if (phase !== "puzzle") return;
     const interval = setInterval(() => {
@@ -179,7 +245,6 @@ export default function SweatyCaptcha() {
     return () => clearInterval(interval);
   }, [phase]);
 
-  // Wobble effect
   useEffect(() => {
     if (phase !== "puzzle") return;
     const interval = setInterval(() => {
@@ -190,10 +255,8 @@ export default function SweatyCaptcha() {
   }, [phase]);
 
   const handleDragStart = useCallback(
-    (e: React.DragEvent, tileId: number) => {
+    (_e: React.DragEvent, tileId: number) => {
       setDraggingId(tileId);
-
-      // Random grip failure
       if (Math.random() < 0.25) {
         setGripFailing(true);
         setTimeout(() => setGripFailing(false), GRIP_FAIL_DURATION);
@@ -207,7 +270,6 @@ export default function SweatyCaptcha() {
       e.preventDefault();
       if (draggingId === null) return;
 
-      // Slip check during drag-over
       if (Math.random() < SLIP_BASE_CHANCE * 0.03) {
         setSlippingTileId(draggingId);
         setTimeout(() => {
@@ -233,7 +295,6 @@ export default function SweatyCaptcha() {
           });
           setDraggingId(null);
         }, 200);
-        return;
       }
     },
     [draggingId]
@@ -304,13 +365,14 @@ export default function SweatyCaptcha() {
   const checkSolution = useCallback(() => {
     const solved = tiles.every((t) => t.correctIndex === t.currentIndex);
     if (solved) {
-      if (timerRef.current) clearInterval(timerRef.current);
+      cleanup();
       setPhase("success");
     } else {
       setWobbling(true);
       setTimeout(() => setWobbling(false), 1000);
+      handleFailure("wrong_solution");
     }
-  }, [tiles]);
+  }, [tiles, cleanup, handleFailure]);
 
   const getTileAtPosition = (currentIndex: number) =>
     tiles.find((t) => t.currentIndex === currentIndex);
@@ -321,8 +383,31 @@ export default function SweatyCaptcha() {
     return `${m}:${sec.toString().padStart(2, "0")}`;
   };
 
+  const resetAll = useCallback(() => {
+    cleanup();
+    setPhase("upload");
+    setImageDataUrl(null);
+    setSlicedImageUrl(null);
+    setTiles([]);
+    setAttempts(0);
+    setElapsedTime(0);
+    setTimeLeft(PUZZLE_TIME_LIMIT);
+    shameUploadedRef.current = false;
+    setFailureReason("");
+  }, [cleanup]);
+
+  const timerUrgent = timeLeft <= 10;
+  const timerCritical = timeLeft <= 5;
+
   return (
-    <main className="min-h-screen bg-gradient-to-br from-gray-950 via-purple-950 to-gray-950 flex items-center justify-center p-4">
+    <main className="min-h-screen bg-gradient-to-br from-gray-950 via-purple-950 to-gray-950 flex flex-col items-center justify-center p-4 relative">
+      <a
+        href="/gallery"
+        className="absolute top-4 right-4 px-4 py-2 bg-gray-800/80 hover:bg-gray-700 text-gray-300 text-sm font-medium rounded-lg transition-colors backdrop-blur-sm border border-gray-700"
+      >
+        Hall of Shame
+      </a>
+
       <div className="w-full max-w-lg">
         {phase === "upload" && (
           <div className="text-center space-y-8 animate-fade-in">
@@ -424,18 +509,36 @@ export default function SweatyCaptcha() {
               </p>
             </div>
 
-            <div className="flex justify-between text-sm text-gray-500 px-2">
-              <span>⏱️ {formatTime(elapsedTime)}</span>
-              <span>🔄 {attempts} moves</span>
+            <div className="flex justify-between items-center text-sm px-2">
+              <span
+                className={`font-mono font-bold transition-colors ${
+                  timerCritical
+                    ? "text-red-500 animate-pulse"
+                    : timerUrgent
+                      ? "text-yellow-400"
+                      : "text-gray-400"
+                }`}
+              >
+                ⏱️ {timeLeft}s
+              </span>
+              <span className="text-gray-500">
+                🔄 {attempts} moves
+              </span>
             </div>
 
             <div
-              className={`grid gap-1 mx-auto aspect-square ${wobbling ? "animate-wobble" : ""} ${gripFailing ? "animate-grip-fail" : ""}`}
+              className={`relative w-full max-w-[420px] mx-auto grid gap-1 aspect-square ${
+                wobbling ? "animate-wobble" : ""
+              } ${gripFailing ? "animate-grip-fail" : ""} ${
+                timerCritical ? "animate-panic-shake" : ""
+              }`}
               style={{
                 gridTemplateColumns: `repeat(${GRID_SIZE}, 1fr)`,
-                maxWidth: "420px",
               }}
             >
+              {timerCritical && (
+                <div className="absolute inset-0 border-2 border-red-500/60 rounded-lg animate-pulse pointer-events-none z-20" />
+              )}
               {Array.from({ length: TOTAL_TILES }, (_, cellIndex) => {
                 const tile = getTileAtPosition(cellIndex);
                 if (!tile) return null;
@@ -485,9 +588,51 @@ export default function SweatyCaptcha() {
             </button>
 
             <p className="text-gray-600 text-[10px]">
-              Drag tiles to match the original image. The grid wobbles because
-              you&apos;re panicking.
+              Drag tiles to match the original image. Fail and your shame gets
+              preserved forever.
             </p>
+          </div>
+        )}
+
+        {phase === "failed" && (
+          <div className="text-center space-y-6 animate-fade-in">
+            <div className="text-6xl">💀</div>
+            <h2 className="text-2xl font-bold text-red-400">You failed.</h2>
+            <div className="bg-gray-900/80 rounded-xl p-6 max-w-md mx-auto space-y-3">
+              {failureReason === "timeout" ? (
+                <p className="text-gray-300 leading-relaxed">
+                  Time&apos;s up.{" "}
+                  <span className="text-red-400 font-bold">30 seconds</span>{" "}
+                  wasn&apos;t enough to reassemble your shame.
+                </p>
+              ) : (
+                <p className="text-gray-300 leading-relaxed">
+                  Wrong arrangement. You panicked and hit submit with the tiles
+                  all wrong. Classic human move.
+                </p>
+              )}
+              <div className="border-t border-gray-700 pt-3 space-y-2">
+                <p className="text-yellow-400 font-bold">
+                  Your shame has been preserved.
+                </p>
+                <p className="text-gray-500 text-sm">
+                  Your blurred selfie now lives in the Hall of Shame forever.
+                  Alongside every other failure before you.
+                </p>
+                <a
+                  href="/gallery"
+                  className="inline-block mt-2 px-4 py-2 bg-yellow-600/20 hover:bg-yellow-600/30 text-yellow-400 text-sm rounded-lg transition-colors border border-yellow-600/30"
+                >
+                  Visit the Hall of Shame →
+                </a>
+              </div>
+            </div>
+            <button
+              onClick={resetAll}
+              className="px-6 py-3 bg-purple-600 hover:bg-purple-500 text-white font-bold rounded-xl transition-colors"
+            >
+              Try again (bring a new shame)
+            </button>
           </div>
         )}
 
@@ -497,13 +642,13 @@ export default function SweatyCaptcha() {
             <h2 className="text-2xl font-bold text-white">You did it.</h2>
             <div className="bg-gray-900/80 rounded-xl p-6 max-w-md mx-auto space-y-3">
               <p className="text-gray-300 leading-relaxed">
-                You stared at your worst photo for{" "}
+                You reassembled your shame in{" "}
                 <span className="text-purple-400 font-bold">
                   {formatTime(elapsedTime)}
                 </span>{" "}
-                while your fake sweaty hands betrayed you{" "}
+                with{" "}
                 <span className="text-purple-400 font-bold">{attempts}</span>{" "}
-                times.
+                sweaty moves.
               </p>
               <div className="border-t border-gray-700 pt-3 space-y-2">
                 <p className="text-green-400 font-bold text-lg">
@@ -518,13 +663,7 @@ export default function SweatyCaptcha() {
               </div>
             </div>
             <button
-              onClick={() => {
-                setPhase("upload");
-                setImageDataUrl(null);
-                setTiles([]);
-                setAttempts(0);
-                setElapsedTime(0);
-              }}
+              onClick={resetAll}
               className="px-6 py-3 bg-gray-800 hover:bg-gray-700 text-gray-300 font-bold rounded-xl transition-colors"
             >
               Do it again (you won&apos;t)

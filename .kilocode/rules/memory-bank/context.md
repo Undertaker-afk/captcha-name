@@ -23,6 +23,14 @@ The Sweaty Selfie Reassembly CAPTCHA is a single-step, maximally humiliating CAP
 - [x] Rejection screen with AI roast and cringe score
 - [x] Layout metadata and env vars configured
 
+## UI Library
+
+- **E2B shadcn registry** (ui.e2b.dev) — custom shadcn components with dark-first design
+- Theme: IBM Plex Sans/Mono fonts, orange accent (#FF8800), dark bg (#0A0A0A)
+- Components used: `Button` (primary/secondary/tertiary/quaternary variants), `Badge` (default/error/warning/positive/info), `Dialog`, `Icons`, `Sonner` (toast notifications)
+- Theme file: `src/theme.css` — E2B design tokens (bg, fg, stroke, accent colors)
+- Installed via: `npx shadcn@latest add https://ui.e2b.dev/theme` + component URLs
+
 ## Architecture
 
 | File | Purpose |
@@ -32,8 +40,10 @@ The Sweaty Selfie Reassembly CAPTCHA is a single-step, maximally humiliating CAP
 | `src/app/api/shame-upload/route.ts` | Server route — uploads failed image to Vercel Blob with metadata |
 | `src/app/page.tsx` | Home page — renders SweatyCaptcha |
 | `src/app/gallery/page.tsx` | Hall of Shame — lists all blurred failed images from Vercel Blob |
-| `src/app/globals.css` | Custom CSS animations for sabotage and urgency effects |
-| `src/app/layout.tsx` | Root layout with metadata |
+| `src/app/globals.css` | Custom CSS animations + E2B theme import |
+| `src/app/layout.tsx` | Root layout — IBM Plex fonts, dark class, Toaster |
+| `src/theme.css` | E2B design tokens |
+| `src/components/ui/` | E2B components: button, badge, dialog, icons, loader, sonner |
 | `.env.local` | `KILO_API_URL`, `KILO_API_KEY`, `BLOB_READ_WRITE_TOKEN` |
 
 ## Sabotage Mechanics
@@ -72,3 +82,4 @@ All features implemented. App is live.
 |------|---------|
 | 2026-03-19 | Built complete CAPTCHA with AI scoring and sabotage puzzle |
 | 2026-03-19 | Added 30s timer, shame upload to Vercel Blob, Hall of Shame gallery |
+| 2026-03-19 | Integrated E2B shadcn UI library (ui.e2b.dev) — Button, Badge, Dialog, Sonner |

@@ -94,3 +94,4 @@ All features implemented. App is live.
 | 2026-03-19 | Integrated E2B shadcn UI library (ui.e2b.dev) — Button, Badge, Dialog, Sonner |
 | 2026-03-19 | Added Turso/libsql database, cringe categories (sweat/double-chin/regret), categories leaderboard page |
 | 2026-03-19 | **Fixed cringe scoring bug**: Kilo API gateway base URL was wrong (`/gateway` → `/api/gateway`). Added detailed error logging in API route and improved frontend error messages. |
+| 2026-03-19 | **Improved cringe-score API error handling**: Added image validation (type check, 5MB size limit) to prevent serverless timeouts returning non-JSON. Added explicit Content-Type headers on all responses. Client now reads fallback text on non-JSON responses with KILO_API_KEY hint. |

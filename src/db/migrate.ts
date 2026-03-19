@@ -1,21 +1,23 @@
-import { createExecuteQuery } from "@kilocode/app-builder-db";
+import { createClient } from "@libsql/client/http";
 import fs from "fs";
 import path from "path";
 
-const executeQuery = createExecuteQuery();
-
-async function runSql(sql: string) {
-  await executeQuery(sql, [], "run");
-}
+const client = createClient({
+  url:
+    process.env.DB_URL ||
+    "https://embarrassing-undertaker-afk.aws-eu-west-1.turso.io",
+  authToken: process.env.DB_TOKEN,
+});
 
 async function runMigrations() {
-  const migrationsTableSql = `CREATE TABLE IF NOT EXISTS "__drizzle_migrations" (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    hash TEXT NOT NULL,
-    created_at NUMERIC
-  )`;
-
-  await runSql(migrationsTableSql);
+  await client.execute({
+    sql: `CREATE TABLE IF NOT EXISTS "__drizzle_migrations" (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      hash TEXT NOT NULL,
+      created_at NUMERIC
+    )`,
+    args: [],
+  });
 
   const migrationsFolder = "./src/db/migrations";
   const sqlFiles = fs
@@ -32,7 +34,7 @@ async function runMigrations() {
 
     for (const statement of statements) {
       try {
-        await runSql(statement + ";");
+        await client.execute({ sql: statement + ";", args: [] });
       } catch (e: any) {
         if (e?.message?.includes("already exists")) continue;
         console.error(`Migration error in ${file}:`, e);

@@ -1,6 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { toast } from "sonner";
 
 type Phase =
   | "upload"
@@ -200,6 +203,7 @@ export default function SweatyCaptcha() {
           setRoast(data.roast);
 
           if (data.score >= 85) {
+            toast.success("Cringe detected. Brace yourself.");
             sliceImage(dataUrl);
           } else {
             setPhase("rejected");
@@ -400,30 +404,33 @@ export default function SweatyCaptcha() {
   const timerCritical = timeLeft <= 5;
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-gray-950 via-purple-950 to-gray-950 flex flex-col items-center justify-center p-4 relative">
+    <main className="min-h-screen bg-bg flex flex-col items-center justify-center p-4 relative">
       <a
         href="/gallery"
-        className="absolute top-4 right-4 px-4 py-2 bg-gray-800/80 hover:bg-gray-700 text-gray-300 text-sm font-medium rounded-lg transition-colors backdrop-blur-sm border border-gray-700"
+        className="absolute top-4 right-4"
       >
-        Hall of Shame
+        <Button variant="secondary" size="default">
+          Hall of Shame
+        </Button>
       </a>
 
       <div className="w-full max-w-lg">
         {phase === "upload" && (
           <div className="text-center space-y-8 animate-fade-in">
             <div className="space-y-3">
-              <h1 className="text-4xl font-black text-white tracking-tight">
+              <h1 className="text-value-big text-fg">
                 Sweaty Selfie
-                <br />
-                <span className="text-purple-400">Reassembly</span>
               </h1>
-              <p className="text-gray-400 text-lg">
+              <p className="text-value-small text-accent-main-highlight">
+                Reassembly
+              </p>
+              <p className="text-body text-fg-tertiary">
                 The world&apos;s most humiliating CAPTCHA
               </p>
             </div>
 
             <div
-              className="border-2 border-dashed border-purple-500/50 rounded-2xl p-12 hover:border-purple-400 transition-colors cursor-pointer bg-purple-950/30 hover:bg-purple-950/50"
+              className="border border-dashed border-stroke rounded-lg p-12 hover:border-stroke-active transition-colors cursor-pointer bg-bg-1 hover:bg-bg-hover"
               onDrop={handleDrop}
               onDragOver={(e) => e.preventDefault()}
               onClick={() => document.getElementById("file-input")?.click()}
@@ -435,19 +442,17 @@ export default function SweatyCaptcha() {
                 className="hidden"
                 onChange={handleFileInput}
               />
-              <div className="space-y-4">
-                <div className="text-6xl">📸</div>
-                <button className="px-8 py-4 bg-purple-600 hover:bg-purple-500 text-white text-xl font-bold rounded-xl transition-colors shadow-lg shadow-purple-600/30">
+              <div className="space-y-4 flex flex-col items-center">
+                <div className="text-5xl">📸</div>
+                <Button variant="primary" size="default">
                   Prove you&apos;re not a robot
-                  <br />
-                  <span className="text-sm font-normal text-purple-200">
-                    Upload your MOST embarrassing photo
-                  </span>
-                </button>
-                <p className="text-[6px] text-gray-600 max-w-xs mx-auto leading-relaxed">
-                  We promise we delete it after&hellip; probably. By uploading
-                  you agree to temporary self-roasting. No stock photos. No
-                  filtered selfies. Only pure, unfiltered shame.
+                </Button>
+                <p className="text-body text-fg-secondary">
+                  Upload your MOST embarrassing photo
+                </p>
+                <p className="text-label text-fg-tertiary max-w-xs leading-relaxed">
+                  We promise we delete it after&hellip; probably. No stock
+                  photos. No filtered selfies. Only pure, unfiltered shame.
                 </p>
               </div>
             </div>
@@ -456,14 +461,14 @@ export default function SweatyCaptcha() {
 
         {phase === "scoring" && (
           <div className="text-center space-y-6 animate-fade-in">
-            <div className="text-6xl animate-pulse">🔍</div>
-            <h2 className="text-2xl font-bold text-white">
-              Analyzing your shame&hellip;
+            <div className="text-5xl animate-pulse">🔍</div>
+            <h2 className="text-headline text-fg">
+              Analyzing your shame
             </h2>
-            <div className="w-48 h-2 bg-gray-800 rounded-full mx-auto overflow-hidden">
-              <div className="h-full bg-purple-500 rounded-full animate-scan" />
+            <div className="w-48 h-1.5 bg-fill rounded-full mx-auto overflow-hidden">
+              <div className="h-full bg-accent-main-highlight rounded-full animate-scan" />
             </div>
-            <p className="text-gray-500 text-sm">
+            <p className="text-body text-fg-tertiary">
               Our AI is judging you. Hard.
             </p>
           </div>
@@ -471,63 +476,53 @@ export default function SweatyCaptcha() {
 
         {phase === "rejected" && (
           <div className="text-center space-y-6 animate-fade-in">
-            <div className="text-6xl">😤</div>
-            <h2 className="text-2xl font-bold text-white">Rejected.</h2>
-            <div className="bg-gray-900/80 rounded-xl p-6 space-y-3 max-w-md mx-auto">
-              <p className="text-purple-300 text-lg italic">
+            <div className="text-5xl">😤</div>
+            <h2 className="text-headline text-fg">Rejected</h2>
+            <div className="bg-bg-1 border rounded-lg p-6 space-y-3 max-w-md mx-auto">
+              <p className="text-body text-fg-secondary italic">
                 &ldquo;{roast}&rdquo;
               </p>
-              <p className="text-gray-400">
-                Cringe score:{" "}
-                <span className="text-red-400 font-bold">{score}/100</span>
-              </p>
-              <p className="text-gray-500 text-sm">
-                Cute. Try again with something that makes you sweat just looking
-                at it. Need 85+.
+              <div className="flex items-center justify-center gap-2">
+                <span className="text-label text-fg-tertiary">
+                  Cringe score
+                </span>
+                <Badge variant="error">{score}/100</Badge>
+              </div>
+              <p className="text-body text-fg-tertiary">
+                Need 85+ to pass. Try something that makes you sweat.
               </p>
             </div>
-            <button
-              onClick={() => {
-                setPhase("upload");
-                setImageDataUrl(null);
-              }}
-              className="px-6 py-3 bg-purple-600 hover:bg-purple-500 text-white font-bold rounded-xl transition-colors"
-            >
+            <Button variant="primary" onClick={() => { setPhase("upload"); setImageDataUrl(null); }}>
               Try again with something worse
-            </button>
+            </Button>
           </div>
         )}
 
         {phase === "puzzle" && (
           <div className="text-center space-y-4 animate-fade-in">
             <div className="space-y-1">
-              <h2 className="text-xl font-bold text-white">
-                Reassemble your shame.
+              <h2 className="text-headline text-fg">
+                Reassemble your shame
               </h2>
-              <p className="text-purple-400 text-sm">
-                Careful&hellip; your hands are sweaty from the embarrassment.
+              <p className="text-body text-accent-main-highlight">
+                Careful&hellip; your hands are sweaty
               </p>
             </div>
 
-            <div className="flex justify-between items-center text-sm px-2">
-              <span
-                className={`font-mono font-bold transition-colors ${
-                  timerCritical
-                    ? "text-red-500 animate-pulse"
-                    : timerUrgent
-                      ? "text-yellow-400"
-                      : "text-gray-400"
-                }`}
+            <div className="flex justify-between items-center px-2">
+              <Badge
+                variant={timerCritical ? "error" : timerUrgent ? "warning" : "defaultMuted"}
               >
-                ⏱️ {timeLeft}s
-              </span>
-              <span className="text-gray-500">
-                🔄 {attempts} moves
-              </span>
+                {timerCritical && "⏰ "}
+                {timeLeft}s
+              </Badge>
+              <Badge variant="defaultMuted">
+                {attempts} moves
+              </Badge>
             </div>
 
             <div
-              className={`relative w-full max-w-[420px] mx-auto grid gap-1 aspect-square ${
+              className={`relative w-full max-w-[420px] mx-auto grid gap-px aspect-square ${
                 wobbling ? "animate-wobble" : ""
               } ${gripFailing ? "animate-grip-fail" : ""} ${
                 timerCritical ? "animate-panic-shake" : ""
@@ -537,7 +532,7 @@ export default function SweatyCaptcha() {
               }}
             >
               {timerCritical && (
-                <div className="absolute inset-0 border-2 border-red-500/60 rounded-lg animate-pulse pointer-events-none z-20" />
+                <div className="absolute inset-0 border-2 border-accent-error-highlight/60 rounded-lg animate-pulse pointer-events-none z-20" />
               )}
               {Array.from({ length: TOTAL_TILES }, (_, cellIndex) => {
                 const tile = getTileAtPosition(cellIndex);
@@ -556,7 +551,7 @@ export default function SweatyCaptcha() {
                     onDrop={(e) => handleDropOnCell(e, cellIndex)}
                     onDragEnd={handleDragEnd}
                     className={`
-                      aspect-square rounded-sm cursor-grab active:cursor-grabbing
+                      aspect-square cursor-grab active:cursor-grabbing
                       transition-transform relative overflow-hidden
                       ${isDragging ? "opacity-50 scale-95 z-10" : ""}
                       ${isSlipping ? "animate-slip" : ""}
@@ -572,7 +567,7 @@ export default function SweatyCaptcha() {
                         </div>
                       </div>
                     )}
-                    <div className="absolute bottom-0 right-0 bg-black/60 text-white text-[8px] px-1 rounded-tl-sm pointer-events-none">
+                    <div className="absolute bottom-0 right-0 bg-bg-inverted/70 text-fg-inverted text-label px-0.5 rounded-tl pointer-events-none">
                       {tile.correctIndex + 1}
                     </div>
                   </div>
@@ -580,94 +575,83 @@ export default function SweatyCaptcha() {
               })}
             </div>
 
-            <button
-              onClick={checkSolution}
-              className="px-8 py-3 bg-green-600 hover:bg-green-500 text-white font-bold rounded-xl transition-colors shadow-lg shadow-green-600/30"
-            >
+            <Button variant="primary" onClick={checkSolution}>
               I&apos;ve reassembled my shame
-            </button>
+            </Button>
 
-            <p className="text-gray-600 text-[10px]">
-              Drag tiles to match the original image. Fail and your shame gets
-              preserved forever.
+            <p className="text-label text-fg-tertiary">
+              Fail and your shame gets preserved forever.
             </p>
           </div>
         )}
 
         {phase === "failed" && (
           <div className="text-center space-y-6 animate-fade-in">
-            <div className="text-6xl">💀</div>
-            <h2 className="text-2xl font-bold text-red-400">You failed.</h2>
-            <div className="bg-gray-900/80 rounded-xl p-6 max-w-md mx-auto space-y-3">
+            <div className="text-5xl">💀</div>
+            <h2 className="text-headline text-accent-error-highlight">
+              You failed
+            </h2>
+            <div className="bg-bg-1 border rounded-lg p-6 max-w-md mx-auto space-y-3">
               {failureReason === "timeout" ? (
-                <p className="text-gray-300 leading-relaxed">
-                  Time&apos;s up.{" "}
-                  <span className="text-red-400 font-bold">30 seconds</span>{" "}
-                  wasn&apos;t enough to reassemble your shame.
+                <p className="text-body text-fg-secondary">
+                  Time&apos;s up. 30 seconds wasn&apos;t enough.
                 </p>
               ) : (
-                <p className="text-gray-300 leading-relaxed">
-                  Wrong arrangement. You panicked and hit submit with the tiles
-                  all wrong. Classic human move.
+                <p className="text-body text-fg-secondary">
+                  Wrong arrangement. You panicked. Classic human move.
                 </p>
               )}
-              <div className="border-t border-gray-700 pt-3 space-y-2">
-                <p className="text-yellow-400 font-bold">
-                  Your shame has been preserved.
-                </p>
-                <p className="text-gray-500 text-sm">
+              <div className="border-t border-stroke pt-3 space-y-2">
+                <Badge variant="warning">Your shame has been preserved</Badge>
+                <p className="text-label text-fg-tertiary">
                   Your blurred selfie now lives in the Hall of Shame forever.
-                  Alongside every other failure before you.
                 </p>
-                <a
-                  href="/gallery"
-                  className="inline-block mt-2 px-4 py-2 bg-yellow-600/20 hover:bg-yellow-600/30 text-yellow-400 text-sm rounded-lg transition-colors border border-yellow-600/30"
-                >
-                  Visit the Hall of Shame →
-                </a>
+                <div className="pt-2">
+                  <a href="/gallery">
+                    <Button variant="secondary" size="sm">
+                      Visit the Hall of Shame →
+                    </Button>
+                  </a>
+                </div>
               </div>
             </div>
-            <button
-              onClick={resetAll}
-              className="px-6 py-3 bg-purple-600 hover:bg-purple-500 text-white font-bold rounded-xl transition-colors"
-            >
+            <Button variant="primary" onClick={resetAll}>
               Try again (bring a new shame)
-            </button>
+            </Button>
           </div>
         )}
 
         {phase === "success" && (
           <div className="text-center space-y-6 animate-fade-in">
-            <div className="text-6xl animate-bounce-once">🎉</div>
-            <h2 className="text-2xl font-bold text-white">You did it.</h2>
-            <div className="bg-gray-900/80 rounded-xl p-6 max-w-md mx-auto space-y-3">
-              <p className="text-gray-300 leading-relaxed">
-                You reassembled your shame in{" "}
-                <span className="text-purple-400 font-bold">
+            <div className="text-5xl animate-bounce-once">🎉</div>
+            <h2 className="text-headline text-fg">
+              You did it
+            </h2>
+            <div className="bg-bg-1 border rounded-lg p-6 max-w-md mx-auto space-y-3">
+              <p className="text-body text-fg-secondary">
+                Reassembled in{" "}
+                <span className="text-accent-main-highlight font-bold">
                   {formatTime(elapsedTime)}
                 </span>{" "}
                 with{" "}
-                <span className="text-purple-400 font-bold">{attempts}</span>{" "}
+                <span className="text-accent-main-highlight font-bold">
+                  {attempts}
+                </span>{" "}
                 sweaty moves.
               </p>
-              <div className="border-t border-gray-700 pt-3 space-y-2">
-                <p className="text-green-400 font-bold text-lg">
-                  CAPTCHA passed.
-                </p>
-                <p className="text-gray-500 text-sm">
+              <div className="border-t border-stroke pt-3 space-y-2">
+                <Badge variant="positive">CAPTCHA passed</Badge>
+                <p className="text-label text-fg-tertiary">
                   Your shame file has been deleted (we swear).
                 </p>
-                <p className="text-purple-400 font-mono text-sm">
+                <p className="text-label-numeric text-accent-main-highlight">
                   Bot probability: 0.0000001%
                 </p>
               </div>
             </div>
-            <button
-              onClick={resetAll}
-              className="px-6 py-3 bg-gray-800 hover:bg-gray-700 text-gray-300 font-bold rounded-xl transition-colors"
-            >
+            <Button variant="quaternary" onClick={resetAll}>
               Do it again (you won&apos;t)
-            </button>
+            </Button>
           </div>
         )}
       </div>

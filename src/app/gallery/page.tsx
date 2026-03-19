@@ -1,6 +1,8 @@
 import { list } from "@vercel/blob";
 import Image from "next/image";
 import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 
 interface ShameEntry {
   shameUrl: string;
@@ -45,41 +47,35 @@ export default async function GalleryPage() {
   }
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-gray-950 via-red-950/30 to-gray-950 p-8">
+    <main className="min-h-screen bg-bg p-8">
       <div className="max-w-4xl mx-auto space-y-8">
         <div className="text-center space-y-3">
-          <Link
-            href="/"
-            className="inline-block text-gray-500 hover:text-gray-300 text-sm transition-colors mb-4"
-          >
-            ← Back to CAPTCHA
-          </Link>
-          <h1 className="text-4xl font-black text-white tracking-tight">
-            Hall of
-            <br />
-            <span className="text-red-400">Shame</span>
-          </h1>
-          <p className="text-gray-400 text-lg max-w-md mx-auto">
+          <div className="mb-4">
+            <Link href="/">
+              <Button variant="quaternary" size="sm">
+                ← Back to CAPTCHA
+              </Button>
+            </Link>
+          </div>
+          <h1 className="text-value-big text-fg">Hall of</h1>
+          <p className="text-value-small text-accent-error-highlight">Shame</p>
+          <p className="text-body text-fg-tertiary max-w-md mx-auto">
             These people tried the CAPTCHA. They failed. Their blurred selfies
             now live here forever.
           </p>
-          <p className="text-gray-600 text-sm">
-            {entries.length} failed attempt{entries.length !== 1 ? "s" : ""}{" "}
-            recorded
-          </p>
+          <Badge variant="defaultMuted">
+            {entries.length} failed attempt{entries.length !== 1 ? "s" : ""}
+          </Badge>
         </div>
 
         {entries.length === 0 ? (
           <div className="text-center py-20 space-y-4">
-            <div className="text-6xl">👻</div>
-            <p className="text-gray-500 text-lg">
+            <div className="text-5xl">👻</div>
+            <p className="text-body text-fg-tertiary">
               No shame recorded yet. Be the first to fail.
             </p>
-            <Link
-              href="/"
-              className="inline-block px-6 py-3 bg-purple-600 hover:bg-purple-500 text-white font-bold rounded-xl transition-colors"
-            >
-              Try the CAPTCHA
+            <Link href="/">
+              <Button variant="primary">Try the CAPTCHA</Button>
             </Link>
           </div>
         ) : (
@@ -87,7 +83,7 @@ export default async function GalleryPage() {
             {entries.map((entry, i) => (
               <div
                 key={i}
-                className="group relative bg-gray-900/60 rounded-xl overflow-hidden border border-gray-800 hover:border-red-500/40 transition-colors"
+                className="group relative bg-bg-1 border rounded-lg overflow-hidden hover:border-stroke-active transition-colors"
               >
                 <div className="aspect-square relative">
                   <Image
@@ -97,20 +93,22 @@ export default async function GalleryPage() {
                     className="object-cover blur-xl scale-110"
                     unoptimized
                   />
-                  <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
-                    <span className="text-3xl">💀</span>
+                  <div className="absolute inset-0 bg-bg/40 flex items-center justify-center">
+                    <span className="text-4xl">💀</span>
                   </div>
                 </div>
-                <div className="p-3 space-y-1">
-                  <p className="text-red-400 text-xs font-bold uppercase tracking-wider">
+                <div className="p-3 space-y-1.5">
+                  <Badge
+                    variant={entry.reason === "timeout" ? "warning" : "error"}
+                  >
                     {entry.reason === "timeout"
                       ? "Ran out of time"
                       : "Wrong solution"}
-                  </p>
-                  <p className="text-gray-500 text-xs">
+                  </Badge>
+                  <p className="text-label-numeric text-fg-tertiary">
                     {entry.time}s / {entry.attempts} moves
                   </p>
-                  <p className="text-gray-600 text-[10px]">
+                  <p className="text-label text-fg-tertiary">
                     {new Date(entry.timestamp).toLocaleDateString("en-US", {
                       month: "short",
                       day: "numeric",

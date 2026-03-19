@@ -214,7 +214,13 @@ export default function SweatyCaptcha() {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ image: dataUrl }),
           });
-          const data = await res.json();
+
+          let data: { error?: string; score?: number; roast?: string; sweat?: number; doubleChin?: number; regret?: number };
+          try {
+            data = await res.json();
+          } catch {
+            throw new Error(`Server returned non-JSON response (status ${res.status})`);
+          }
 
           if (!res.ok || data.error) {
             setScore(0);
@@ -232,7 +238,7 @@ export default function SweatyCaptcha() {
           setDoubleChin(data.doubleChin ?? 1);
           setRegret(data.regret ?? 1);
 
-          if (data.score >= 85) {
+          if ((data.score ?? 0) >= 85) {
             toast.success("Cringe detected. Brace yourself.");
             sliceImage(dataUrl);
           } else {

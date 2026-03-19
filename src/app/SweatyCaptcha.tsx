@@ -222,7 +222,12 @@ export default function SweatyCaptcha() {
           try {
             data = await res.json();
           } catch {
-            throw new Error(`Server returned non-JSON response (status ${res.status})`);
+            const text = await res.text().catch(() => "");
+            const hint =
+              res.status === 500
+                ? "The server crashed. Check that KILO_API_KEY is set in .env.local."
+                : `Unexpected response (status ${res.status}).`;
+            throw new Error(text ? `${hint} ${text.slice(0, 200)}` : hint);
           }
 
           if (!res.ok || data.error) {
